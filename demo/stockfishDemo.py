@@ -4,13 +4,25 @@
 import chess
 import chess.engine
 
+from chessboard import display
+from time import sleep
+
+def start(fen=''):
+	global gameboard
+
+
 engine = chess.engine.SimpleEngine.popen_uci("/usr/bin/stockfish")
 
 board = chess.Board()
+display.start(board.fen())
+
 while not board.is_game_over():
-	result = engine.play(board,chess.engine.Limit(time=0.1))
+	result = engine.play(board,chess.engine.Limit(time=1.0))
 	board.push(result.move)
 	print(board.peek())
+	print(board.fen)
+	print("test")
+	display.update(board.board_fen())
 
 engine.quit()
-
+display.terminate()

@@ -13,5 +13,5 @@ while not display.checkForQuit():
 	if move_list:
 		board.push_san(move_list.pop(0))
 		display.update(board.fen())
-	sleep(3)
+	sleep(1)
 display.terminate()

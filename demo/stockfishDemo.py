@@ -17,7 +17,7 @@ board = chess.Board()
 display.start(board.fen())
 
 while not board.is_game_over():
-	result = engine.play(board,chess.engine.Limit(time=1.0))
+	result = engine.play(board,chess.engine.Limit(time=1.01))
 	board.push(result.move)
 	print(board.peek())
 	print(board.fen)

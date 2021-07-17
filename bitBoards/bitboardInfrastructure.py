@@ -18,18 +18,18 @@ class Board():
 
     #function to bitwise-and bitboards <- is this still needed?
     #function to map fen -> boardstate
-    #legal move list & captures
     #pawn moves
+    #legal move list & captures
     #execute moves 
     #refactor moves to own module
-    #Debug +7 & -9 overflow errors
-    
+    #examine issue with +7 & -9 and revert hack if possible
+    #unit tests?
 
 
     def __init__(self,board_size=8):
        
-        self.bb = self.empty_bb()
         self.board_size = board_size #64 squares 
+        self.bb = self.empty_bb()
         
         #rank & file bitboards
         self.rank_1_bb = self.empty_bb()
@@ -109,8 +109,7 @@ class Board():
 
 
     def empty_bb(self):
-        return np.zeros(64, "byte")
-        #TODO update getEmptySquares
+        return np.zeros(self.board_size**2, "byte")
 
     def get_empty_squares_bb(self):
         return 1 - self.occupied_squares_bb
@@ -215,7 +214,7 @@ class Board():
             self.bb[i] = 1
             if not (i+1) % 8: 
                 return
-    #broken
+    #Commented out text is broken
     def plus7(self, square):
         #NorthWest Ray#
         for i in range(square, self.board_size**2, 7):
@@ -260,7 +259,7 @@ class Board():
             self.bb[i] = 1
             if not (i+1) % 8: 
                 return
-    #Broken
+    #Commented Out text is Broken
     def minus9(self, square):
         #SouthWest Ray#
         for i in range(square, 0, -9):
@@ -278,9 +277,9 @@ class Board():
         return knight_map
 
     def knight_attacks(self,square):
-        row_mask = self.empty_bb
-        col_mask = self.empty_bb
-        agg_mask = setf.empty_bb
+        row_mask = self.empty_bb()
+        col_mask = self.empty_bb()
+        agg_mask = self.empty_bb()
 
         #overflow file mask -> block off overflow knight moves
         if square in fsq.a:
@@ -306,7 +305,7 @@ class Board():
         if (row_mask.any() or col_mask.any()):
             agg_mask = row_mask | col_mask
 
-        attacks = self.empty_bb
+        attacks = self.empty_bb()
 
         for i in [0,6,15,17,10,-6,-15,-17,-10]:
             if square + i >= self.board_size**2 or square + i < 0:
@@ -317,10 +316,6 @@ class Board():
             #bit shift the attacks by mask
             attacks = attacks >> agg_mask
         return attacks
-
-
-
-
 
 
 

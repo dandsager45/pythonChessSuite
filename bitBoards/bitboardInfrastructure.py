@@ -45,8 +45,7 @@ class Board():
         self.file_g_bb = self.empty_bb()
         self.file_h_bb = self.empty_bb()
 
-        #TODO Remember to uncomment me :)
-        #self.set_rank_file_bitboard()
+        self.set_rank_file_bb()
 
 
         #white piece bitboards
@@ -64,14 +63,29 @@ class Board():
         self.black_R_bb = self.empty_bb()
         self.black_Q_bb = self.empty_bb()
         self.black_K_bb = self.empty_bb()
+       
+
+        #board regions
         
+        self.queenside_bb = self.file_a_bb | self.file_b_bb | self.file_c_bb | self.file_d_bb
+        self.kingside_bb  = self.file_e_bb | self.file_f_bb | self.file_g_bb | self.file_h_bb
+        self.center_files_bb = self.file_c_bb | self.file_d_bb | self.file_e_bb | self.file_f_bb
+        self.flanks_bb = self.file_a_bb | self.file_h_bb 
+        self.center_bb = (self.file_e_bb | self.file_d_bb) & (self.rank_4_bb | self.rank_5_bb)
+
+
+ 
         #put the pieces onto the bitboards
         self.init_pieces()
 
-        self.white_pieces_bb = self.white_P_bb | self.white_N_bb | self.white_B_bb | self.white_R_bb | self.white_Q_bb | self.white_K_bb 
-        self.black_pieces_bb = self.black_P_bb | self.black_N_bb | self.black_B_bb | self.black_R_bb | self.black_Q_bb | self.black_K_bb 
-    
+        self.white_pieces_bb = self.white_P_bb | self.white_N_bb | \
+                               self.white_B_bb | self.white_R_bb | \
+                               self.white_Q_bb | self.white_K_bb
 
+ 
+        self.black_pieces_bb = self.black_P_bb | self.black_N_bb | \
+                               self.black_B_bb | self.black_R_bb | \
+                               self.black_Q_bb | self.black_K_bb 
 
         self.occupied_squares_bb = np.vstack( 
                 (self.white_P_bb,
@@ -102,22 +116,15 @@ class Board():
         self.occupied_squares_bb = result
         return result
 
-    def pretty_print_bitboard(self, bitboard):
-        val = ' '        
-        for i, square in enumerate(bitboard):
-            if not i % 8:
-                val += '\n'
-            if square:
-                val += 'X'
-                continue
-            val += '-'
-        print(val)
-
 
     def init_pieces(self):
-        #manual entry of starting position... should be a better way to init once FEN
-        #conversion is complete
+        #manual entry of starting position... should be a better way to init once FEN mapping is complete
+        self._set_white()
+        self._set_black()
 
+
+    def _set_white(self):
+    
         self.white_R_bb[0] = 1
         self.white_N_bb[1] = 1
         self.white_B_bb[2] = 1
@@ -126,9 +133,14 @@ class Board():
         self.white_B_bb[5] = 1
         self.white_N_bb[6] = 1
         self.white_R_bb[7] = 1
-    
+        
+        for i in range (8,16):
+            self.white_P_bb[i] = 1
+   
+    def _set_black(self):
+ 
         self.black_R_bb[56] = 1
-        self.black_K_bb[57] = 1
+        self.black_N_bb[57] = 1
         self.black_B_bb[58] = 1
         self.black_Q_bb[59] = 1
         self.black_K_bb[60] = 1
@@ -136,10 +148,47 @@ class Board():
         self.black_N_bb[62] = 1
         self.black_R_bb[63] = 1
 
-        for i in range (8,16):
-            self.white_P_bb[i] = 1
         for i in range (48,56):
             self.black_P_bb[i] = 1
+
+    def set_rank_file_bb(self):
+        #todo: faster mi,bu methods
+        for val in fsq.a: self.file_a_bb[val] = 1
+        for val in fsq.b: self.file_b_bb[val] = 1
+        for val in fsq.c: self.file_c_bb[val] = 1
+        for val in fsq.d: self.file_d_bb[val] = 1
+        for val in fsq.e: self.file_e_bb[val] = 1
+        for val in fsq.f: self.file_f_bb[val] = 1
+        for val in fsq.g: self.file_g_bb[val] = 1
+        for val in fsq.h: self.file_h_bb[val] = 1
+
+
+        for val in rsq._1: self.rank_1_bb[val] = 1
+        for val in rsq._2: self.rank_2_bb[val] = 1
+        for val in rsq._3: self.rank_3_bb[val] = 1
+        for val in rsq._4: self.rank_4_bb[val] = 1
+        for val in rsq._5: self.rank_5_bb[val] = 1
+        for val in rsq._6: self.rank_6_bb[val] = 1
+        for val in rsq._7: self.rank_7_bb[val] = 1
+        for val in rsq._8: self.rank_8_bb[val] = 1
+
+    def get_white_pieces_bb(self):
+
+        return self.white_P_bb | \
+               self.white_R_bb | \
+               self.white_N_bb | \
+               self.white_B_bb | \
+               self.white_Q_bb | \
+               self.white_K_bb 
+ 
+    def get_black_pieces_bb(self):
+
+        return self.black_P_bb | \
+               self.black_R_bb | \
+               self.black_N_bb | \
+               self.black_B_bb | \
+               self.black_Q_bb | \
+               self.black_K_bb 
 
 
 def pretty_print_bb(bb, board_size=8):

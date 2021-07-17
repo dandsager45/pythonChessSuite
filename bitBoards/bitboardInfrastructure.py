@@ -39,7 +39,7 @@ class Board():
 
         self.init_pieces()
 
-        self.bitboards = np.vstack( 
+        self.occupied_squares_bitboard = np.vstack( 
                 (self.white_pawn_bitboard,
                 self.white_knight_bitboard, 
                 self.white_bishop_bitboard, 
@@ -58,17 +58,19 @@ class Board():
     def empty_bitboard(self):
         return np.zeros(64, "byte")
 
-    def update_bitboard_state(self):
-        result = np.zeros(64, dtype="byte")
-        for board in self.bitboards:
-            result = np.bitwise_or(board, result, dtype="byte")
-        self.bitboards = result
-        return result
-   
+    def get_empty_squares_bitboard(self):
+        return 1 - self.occupied_squares_bitboard
 
-    def pretty_print(self):
+    def update_occupied_squares_bitboard(self):
+        result = np.zeros(64, dtype="byte")
+        for board in self.occupied_squares_bitboard:
+            result = np.bitwise_or(board, result, dtype="byte")
+        self.occupied_squares_bitboard = result
+        return result
+
+    def pretty_print_bitboard(self, bitboard):
         val = ' '        
-        for i, square in enumerate(self.bitboards):
+        for i, square in enumerate(bitboard):
             if not i % 8:
                 val += '\n'
             if square:
@@ -104,22 +106,3 @@ class Board():
             self.white_pawn_bitboard[i] = 1
         for i in range (48,56):
             self.black_pawn_bitboard[i] = 1
-
-
-
-
-        #All methods after this are of my creation, used Wes Doyle's initial chess engine creation stream for prior content
-
-    #This does not work 100%, need to do an x axis flip
-    def true_pretty_print(self):
-        val = ' '        
-        for i, square in enumerate(self.black_queen_bitboard):
-            if not i % 8:
-                val += '\n'
-            if square:
-                val += 'X'
-                continue
-            val += '-'
-        trueVal = val[::-1]
-        print(trueVal)
-

@@ -9,24 +9,28 @@ from constants import Piece, FileSqures as fsq, RankSquares as rsq
 class Board():
 
     # Bitboards are a numerical representation of where the pieces are 
-    # You can get the "occupied" squares of the chessboard by performing a bitwise-and operation on all the bitboards
+    # You can get the "occupied" squares of the chessboard by performing a bitwise-and operation on all the piece bitboards
     #
 
     """one bitboard consists of 64 bits. Each bit represents a square on the chessboard.
     There is a different bitboard for each color of each piece, 1 represents that the 
     piece is present, 0 is vacant"""
 
-    #funciton to set staring state
-    #function to bitwise-and bitboards
+    #function to bitwise-and bitboards <- is this still needed?
     #function to map fen -> boardstate
-    #function to pretty print bitboard for debugging
-    #legal move list
+    #legal move list & captures
+    #pawn moves
+    #execute moves 
+    #refactor moves to own module
+    #Debug +7 & -9 overflow errors
     
 
 
     def __init__(self,board_size=8):
-        
+       
         self.bb = self.empty_bb()
+        self.board_size = board_size #64 squares 
+        
         #rank & file bitboards
         self.rank_1_bb = self.empty_bb()
         self.rank_2_bb = self.empty_bb()
@@ -103,9 +107,11 @@ class Board():
             )
 
 
+
     def empty_bb(self):
         return np.zeros(64, "byte")
         #TODO update getEmptySquares
+
     def get_empty_squares_bb(self):
         return 1 - self.occupied_squares_bb
 
@@ -115,7 +121,10 @@ class Board():
             result = np.bitwise_or(board, result, dtype="byte")
         self.occupied_squares_bb = result
         return result
-
+    
+    #mostly used when performing tests on Jupyter Notebook
+    def reset_bb(self):
+        self.bb = self.empty_bb()
 
     def init_pieces(self):
         #manual entry of starting position... should be a better way to init once FEN mapping is complete
@@ -152,7 +161,7 @@ class Board():
             self.black_P_bb[i] = 1
 
     def set_rank_file_bb(self):
-        #todo: faster mi,bu methods
+        #todo: faster numpy methods
         for val in fsq.a: self.file_a_bb[val] = 1
         for val in fsq.b: self.file_b_bb[val] = 1
         for val in fsq.c: self.file_c_bb[val] = 1
@@ -189,6 +198,130 @@ class Board():
                self.black_B_bb | \
                self.black_Q_bb | \
                self.black_K_bb 
+
+
+    ########################################Piece Movement###################################
+    def update_position(self, piece_map):
+        pass
+    
+    #Sliding  piece movement (Queen, King, Rook, Bishop)
+
+
+
+    #reference for sliding rays: chessprogramming.org/On_an_empty_Board
+    def plus1(self, square):
+        #East Ray#
+        for i in range(square, self.board_size**2, 1):
+            self.bb[i] = 1
+            if not (i+1) % 8: 
+                return
+    #broken
+    def plus7(self, square):
+        #NorthWest Ray#
+        for i in range(square, self.board_size**2, 7):
+            self.bb[i] = 1
+            #if not (i+1) % 8: 
+            #    return
+            if not i % 8: 
+                return
+
+
+    def plus8(self, square):
+        #North Ray#
+        for i in range(square, self.board_size**2, 8):
+            self.bb[i] = 1
+            if not (i+1) % 8: 
+                return
+
+    def plus9(self, square):
+        #NorthEast Ray#
+        for i in range(square, self.board_size**2, 9):
+            self.bb[i] = 1
+            if not (i+1) % 8: 
+                return
+
+    def minus1(self, square):
+        #West Ray#
+        for i in range(square, 0, -1):
+            self.bb[i] = 1
+            if not (i+1) % 8: 
+                return
+
+    def minus7(self, square):
+        #SouthEast Ray#
+        for i in range(square, 0, -7):
+            self.bb[i] = 1
+            if not (i+1) % 8: 
+                return
+
+    def minus8(self, square):
+        #South Ray#
+        for i in range(square, 0, -8):
+            self.bb[i] = 1
+            if not (i+1) % 8: 
+                return
+    #Broken
+    def minus9(self, square):
+        #SouthWest Ray#
+        for i in range(square, 0, -9):
+            self.bb[i] = 1
+            #if not (i+1) % 8: 
+            #    return
+            if not i % 8:
+                return
+
+    #Knight Movement
+    def make_knight_bb(self):
+        knight_map = {}
+        for i in range(self.board_size**2):
+            knight_map[i] = self.knight_attacks(i)
+        return knight_map
+
+    def knight_attacks(self,square):
+        row_mask = self.empty_bb
+        col_mask = self.empty_bb
+        agg_mask = setf.empty_bb
+
+        #overflow file mask -> block off overflow knight moves
+        if square in fsq.a:
+            col_mask = self.file_g_bb | self.file_h_bb
+        elif square in fsq.b:
+            col_mask = self.file_h_bb
+        elif square in fsq.g:
+            col_mask = self.file_a_bb
+        elif square in fsq.h:
+            col_mask = self.file_a_bb | self.file_b_bb
+
+        #overflow ranks mask
+        if square in rsq._1:
+            row_mask = self.rank_8_bb | self.rank_7_bb
+        elif square in rsq._2:
+            row_mask = self.rank_8_bb
+        #elif square in rsq._7:
+        #    row_mask = self.rank_1_bb
+        #elif square in rsq._8:
+        #    row_mask = self.rank_1_bb | self.rank_2_bb
+        
+        #aggregate mask
+        if (row_mask.any() or col_mask.any()):
+            agg_mask = row_mask | col_mask
+
+        attacks = self.empty_bb
+
+        for i in [0,6,15,17,10,-6,-15,-17,-10]:
+            if square + i >= self.board_size**2 or square + i < 0:
+                #Skip OOB
+                continue
+            attacks[square + i] = 1
+        if agg_mask.any():
+            #bit shift the attacks by mask
+            attacks = attacks >> agg_mask
+        return attacks
+
+
+
+
+
 
 
 def pretty_print_bb(bb, board_size=8):

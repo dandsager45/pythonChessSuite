@@ -67,7 +67,7 @@ class SquarePosition:
     a8 = 56
     b8 = 57
     c8 = 58
-    d8 = 69
+    d8 = 59
     e8 = 60
     f8 = 61
     g8 = 62

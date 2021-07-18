@@ -70,8 +70,13 @@ class Board:
 
         self.set_rank_file_bb()
 
-        #static knight bbs (should this be independent?)
+        
+        #static knight attacks (should this be independent?)
         self.knight_bbs = self._make_knight_bb()
+
+        #static pawn attacks
+        self.wP_east_attack_map, self.wP_west_attack_map, self.bP_east_attack_map, self.bP_west_attack_map = \
+            self._make_pawn_attack_bb()
 
     @property
     def white_pieces_bb(self):
@@ -110,6 +115,16 @@ class Board:
     @property
     def center_squares_bb(self):
         return (self.file_d_bb | self.file_e_bb ) & (self.rank_4_bb | self.rank_5_bb)
+
+    
+    @property
+    def current_white_pawn_attacks(self):
+        pass
+    
+    @property
+    def current_black_pawn_attacks(self):
+        pass
+
 
 
     #not sure if I will need this later, or if is completely obsolete
@@ -170,8 +185,6 @@ class Board:
     ########################################Piece Movement###################################
     #Sliding  piece movement (Queen, King, Rook, Bishop)
 
-
-
     #reference for sliding rays: chessprogramming.org/On_an_empty_Board
     def plus1(self, square):
         #East Ray#
@@ -188,7 +201,6 @@ class Board:
             #    return
             if not i % 8: 
                 return
-
 
     def plus8(self, square):
         #North Ray#
@@ -233,13 +245,63 @@ class Board:
             #    return
             if not i % 8:
                 return
+    ###############################################Generate piece attacking BBs######################
+    #Queen (& potentially king) attack maps can be created by combining bishop & rook attack maps
+    ###PAWN ATTACKS###
+    def _make_pawn_attack_bb(self):
+        wP_east_attack_map = {}
+        wP_west_attack_map = {}
+        bP_east_attack_map = {}
+        bP_west_attack0_map = {}
+
+        for i in range(self.board_size**2):
+            wP_east_attack_map[i] = self._white_pawn_east_attack(i)
+            wP_west_attack_map[i] = self._white_pawn_west_attack(i)
+            bP_east_attack_map[i] = self._black_pawn_east_attack(i)
+            bP_west_attack_map[i] = self._black_pawn_west_attack(i)
+        
+        return wP_east_attack_map, wP_west_attack_map, bP_east_attack_map, bP_west_attack_map 
+
+    @staticmethod
+    def _white_pawn_east_attack(self, square):
+        if sqaure in fsq.h:
+            pass
+        return np.array(square + 9)
+
+    def _white_pawn_west_attack(self, square):
+        if sqaure in fsq.a:
+            pass
+        return np.array(square + 7)
+
+    def _black_pawn_east_attack(self, square):
+        if sqaure in fsq.h:
+            pass
+        return np.array(square - 9)
+
+    def _black_pawn_west_attack(self. square):
+        if sqaure in fsq.a:
+            pass
+        return np.array(square - 7)
+
+
+    ###BISHOP ATTACKS###
+
+    def get_bishop_attack_from(self, square):
+        pass
+
+    ###ROOK ATTACKS###
+    def get_rook_attack_from(self, square):
+        pass
+        
+
+
 
     #Knight Movement
     def _make_knight_bb(self):
-        knight_map = {}
+        knight_attack_map = {}
         for i in range(self.board_size**2):
-            knight_map[i] = self._knight_attacks(i)
-        return knight_map
+            knight_attack_map[i] = self._knight_attacks(i)
+        return knight_attack_map
 
     def _knight_attacks(self,square):
         row_mask = self._empty_bb()

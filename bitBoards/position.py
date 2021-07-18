@@ -15,12 +15,12 @@ class Position:
         self.halfmove_clock = 0
    
         self.piece_map = {}
-        self.set_initial_piece_locs()
+        self.set_initial_piece_locations()
 
     def get_piece_locations(self):
         pass
     
-    def set_initial_piece_locs(self):
+    def set_initial_piece_locations(self):
            
         self.piece_map[Piece.wP] = set([i for i in range (8,16)])
         self.piece_map[Piece.wR] = {0, 7}

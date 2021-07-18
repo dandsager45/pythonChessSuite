@@ -1,4 +1,4 @@
-class Move():   
+class Move:   
     """
     Represents the motion of a piece from an origin squre to a target square
     """

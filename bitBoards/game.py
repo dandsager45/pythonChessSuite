@@ -1,5 +1,4 @@
 from position import Position
-from bitboardInfrastructure import Board
 
 class Game:
     def __init__(self):

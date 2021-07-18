@@ -199,10 +199,16 @@ class Board():
                self.black_K_bb 
 
 
-    ########################################Piece Movement###################################
     def update_position(self, piece_map):
-        pass
-    
+        for key, val in piece_map.items():
+            if key == Piece.wP: 
+                self.white_P_bb.fill(0)
+                np.put(self.white_P_bb, list(val), 1)
+
+        #TODO complete piecemap translation
+
+
+    ########################################Piece Movement###################################
     #Sliding  piece movement (Queen, King, Rook, Bishop)
 
 

@@ -2,13 +2,12 @@ from bitboardInfrastructure import Board
 from constants import Color, Piece
 
 class Position:
-    """Represent the itnernal state of a chess position"""
+    """Represent the internal state of a chess position"""
     def __init__(self, board):
         if board is None:   
             self.board = Board()
         else:
             self.board = board
-
         self.to_move = Color.WHITE
         self.castle_rights = { Color.WHITE: True, Color.BLACK: True }
         self.en_passant_target = None

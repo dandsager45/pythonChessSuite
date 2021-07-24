@@ -4,69 +4,113 @@
 import string
 import numpy as np
 
-from constants import Piece, FileSqures as fsq, RankSquares as rsq
+from constants import Piece, File, Rank
+
+BOARD_SIZE = 8
+BOARD_SQUARES = BOARD_SIZE ** 2
+
+#Bitboards are a numerical representation of where the pieces are 
+# You can get the "occupied" squares of the chessboard by performing a bitwise-and operation on all the piece bitboards
+#
+
+"""
+one bitboard consists of 64 bits. Each bit represents a square on the chessboard.
+There is a different bitboard for each color of each piece, 1 represents that the 
+piece is present, 0 is vacant
+"""
+
+#function to bitwise-and bitboards <- is this still needed?
+#function to map fen -> boardstate
+#pawn moves
+#legal move list & captures
+#execute moves 
+#refactor moves to own module
+#examine issue with +7 & -9 and revert hack if possible
+#unit tests?
+
+def make_empty_uint64_bitmap():
+    """
+    Returns a numpy array of one uint64 zero value 
+    :return:
+    """
+    return np.zeros(1, dtype=np.uint64)
+
+def get_bitboard_as_bytyes(bitboard):
+    return bitboard.tobytes()
+
+def get_binary_string(bitboard):
+    return format(bitboard, 'b').zfill(BOARD_SQURES)
+
+def set_bit(bitboard, bit):
+    return bitboard | ( 1 << bit )
+
+def clear_bit(bitboard, bit):
+    return bitboard & ~(1 << bit )
+
+def pretty_print_bb(bitboard):
+    bb = get_binary_string(bitboard)    
+    val = ''
+    display_rank = BOARD_SIZE
+    board = [bb[i:i + 8] for i in range( 0, len(bb), BOARD_SIZE)]
+    board = np.reshape(np.flip(bb), (board_size, board_size))
+    for i, row in enumerate(board):
+        val += f'{display_rank} '
+        display_rank -= 1
+        for square in np.flip(row):
+            if square:
+                val += ' ▓'
+                continue
+            val += ' ░'
+        val += '\n'
+    val += '  '
+    for char in string.ascii_uppercase[:BOARD_SIZE]:
+        val += f' {char}'
+    print(val)
+
+
 
 class Board:
 
-    # Bitboards are a numerical representation of where the pieces are 
-    # You can get the "occupied" squares of the chessboard by performing a bitwise-and operation on all the piece bitboards
-    #
-
-    """one bitboard consists of 64 bits. Each bit represents a square on the chessboard.
-    There is a different bitboard for each color of each piece, 1 represents that the 
-    piece is present, 0 is vacant"""
-
-    #function to bitwise-and bitboards <- is this still needed?
-    #function to map fen -> boardstate
-    #pawn moves
-    #legal move list & captures
-    #execute moves 
-    #refactor moves to own module
-    #examine issue with +7 & -9 and revert hack if possible
-    #unit tests?
-
-
-    def __init__(self,board_size=8):
+    def __init__(self):
        
-        self.board_size = board_size #64 squares 
+        self.board_size = BOARD_SIZE #64 squares 
                 
         #white piece bitboards
-        self.white_P_bb = self._empty_bb()
-        self.white_N_bb = self._empty_bb()
-        self.white_B_bb = self._empty_bb()
-        self.white_R_bb = self._empty_bb()
-        self.white_Q_bb = self._empty_bb()
-        self.white_K_bb = self._empty_bb()
+        self.white_P_bb = make_empty_uint64_bitmap()#[0]
+        self.white_N_bb = make_empty_uint64_bitmap()#[0]
+        self.white_B_bb = make_empty_uint64_bitmap()#[0]
+        self.white_R_bb = make_empty_uint64_bitmap()#[0]
+        self.white_Q_bb = make_empty_uint64_bitmap()#[0]
+        self.white_K_bb = make_empty_uint64_bitmap()#[0]
         
         #black piece bitboards
-        self.black_P_bb = self._empty_bb()
-        self.black_N_bb = self._empty_bb()
-        self.black_B_bb = self._empty_bb()
-        self.black_R_bb = self._empty_bb()
-        self.black_Q_bb = self._empty_bb()
-        self.black_K_bb = self._empty_bb()
-       
-        self.attack_bb = self._empty_bb() 
+        self.black_P_bb = make_empty_uint64_bitmap()#[0]
+        self.black_N_bb = make_empty_uint64_bitmap()#[0]
+        self.black_B_bb = make_empty_uint64_bitmap()#[0]
+        self.black_R_bb = make_empty_uint64_bitmap()#[0]
+        self.black_Q_bb = make_empty_uint64_bitmap()#[0]
+        self.black_K_bb = make_empty_uint64_bitmap()#[0]
+                            
         #put the pieces onto the bitboards
         self.init_pieces()
 
         #rank & file bitboards
-        self.rank_1_bb = self._empty_bb()
-        self.rank_2_bb = self._empty_bb()
-        self.rank_3_bb = self._empty_bb()
-        self.rank_4_bb = self._empty_bb()
-        self.rank_5_bb = self._empty_bb()
-        self.rank_6_bb = self._empty_bb()
-        self.rank_7_bb = self._empty_bb()
-        self.rank_8_bb = self._empty_bb()
-        self.file_a_bb = self._empty_bb()
-        self.file_b_bb = self._empty_bb()
-        self.file_c_bb = self._empty_bb()
-        self.file_d_bb = self._empty_bb()
-        self.file_e_bb = self._empty_bb()
-        self.file_f_bb = self._empty_bb()
-        self.file_g_bb = self._empty_bb()
-        self.file_h_bb = self._empty_bb()
+        self.rank_1_bb = make_empty_uint64_bitmap()#[0]
+        self.rank_2_bb = make_empty_uint64_bitmap()#[0]
+        self.rank_3_bb = make_empty_uint64_bitmap()#[0]
+        self.rank_4_bb = make_empty_uint64_bitmap()#[0]
+        self.rank_5_bb = make_empty_uint64_bitmap()#[0]
+        self.rank_6_bb = make_empty_uint64_bitmap()#[0]
+        self.rank_7_bb = make_empty_uint64_bitmap()#[0] 
+        self.rank_8_bb = make_empty_uint64_bitmap()#[0] 
+        self.file_a_bb = make_empty_uint64_bitmap()#[0] 
+        self.file_b_bb = make_empty_uint64_bitmap()#[0]
+        self.file_c_bb = make_empty_uint64_bitmap()#[0]
+        self.file_d_bb = make_empty_uint64_bitmap()#[0] 
+        self.file_e_bb = make_empty_uint64_bitmap()#[0] 
+        self.file_f_bb = make_empty_uint64_bitmap()#[0] 
+        self.file_g_bb = make_empty_uint64_bitmap()#[0] 
+        self.file_h_bb = make_empty_uint64_bitmap()#[0] 
 
         self.set_rank_file_bb()
 
@@ -74,9 +118,6 @@ class Board:
         #static knight attacks (should this be independent?)
         self.knight_bbs = self._make_knight_bb()
 
-        #static pawn attacks
-        self.wP_east_attack_map, self.wP_west_attack_map, self.bP_east_attack_map, self.bP_west_attack_map = \
-            self._make_pawn_attack_bb()
 
     @property
     def white_pieces_bb(self):
@@ -118,12 +159,33 @@ class Board:
 
     
     @property
-    def current_white_pawn_attacks(self):
-        pass
+    def white_P_east_attacks(self):
+        #white pawn east attacks are north east (+9) AND NOT the A file
+        return (self.white_P_bb << 9 ) & (~self.file_a_bb)
+            
+    @property
+    def white_P_west_attacks(self):
+        #white pawn west attacks are north west (+7) AND NOT the H file
+        return (self.white_P_bb << 7) & (~self.file_h_bb)
+
+    @property
+    def white_pawn_attacks(self):
+        return self.white_P_east_attacks | self.white_P_west_attacks
+
+    @property
+    def black_P_east_attacks(self):
+        #white pawn east attacks are south east (-7) AND NOT the A file
+        return (self.black_P_bb >> 7 ) & (~self.file_a_bb)
+
+    @property
+    def black_P_west_attacks(self):
+        #white pawn west attacks are north west (-9) AND NOT the H file
+        return (self.black_P_bb >> 9) & (~self.file_h_bb)
     
     @property
-    def current_black_pawn_attacks(self):
-        pass
+    def black_pawn_attacks(self):
+        return self.black_P_east_attacks | self.black_P_west_attacks
+
 
 
 
@@ -186,59 +248,51 @@ class Board:
     #Sliding  piece movement (Queen, King, Rook, Bishop)
 
     #reference for sliding rays: chessprogramming.org/On_an_empty_Board
-    def plus1(self, square):
-        #East Ray#
-        for i in range(square, self.board_size**2, 1):
+    def make_east_ray(self, square):
+        for i in range(square, BOARD_SQUARES, 1):
             self.attack_bb[i] = 1
             if not (i+1) % 8: 
                 return
     #Commented out text is broken
-    def plus7(self, square):
-        #NorthWest Ray#
-        for i in range(square, self.board_size**2, 7):
+    def make_northwest_ray(self, square):
+        for i in range(square, BOARD_SQUARES, 7):
             self.attack_bb[i] = 1
             #if not (i+1) % 8: 
             #    return
             if not i % 8: 
                 return
 
-    def plus8(self, square):
-        #North Ray#
-        for i in range(square, self.board_size**2, 8):
+    def make_north_ray(self, square):
+        for i in range(square, BOARD_SQUARES, 8):
             self.attack_bb[i] = 1
             if not (i+1) % 8: 
                 return
 
-    def plus9(self, square):
-        #NorthEast Ray#
-        for i in range(square, self.board_size**2, 9):
+    def make_northeast_ray(self, square):
+        for i in range(square, BOARD_SQUARES, 9):
             self.attack_bb[i] = 1
             if not (i+1) % 8: 
                 return
 
-    def minus1(self, square):
-        #West Ray#
+    def make_west_ray(self, square):
         for i in range(square, 0, -1):
             self.attack_bb[i] = 1
             if not (i+1) % 8: 
                 return
 
-    def minus7(self, square):
-        #SouthEast Ray#
+    def make_southeast_ray(self, square):
         for i in range(square, 0, -7):
             self.attack_bb[i] = 1
             if not (i+1) % 8: 
                 return
 
-    def minus8(self, square):
-        #South Ray#
+    def make_south_ray(self, square):
         for i in range(square, 0, -8):
             self.attack_bb[i] = 1
             if not (i+1) % 8: 
                 return
     #Commented Out text is Broken
-    def minus9(self, square):
-        #SouthWest Ray#
+    def make_southwest_ray(self, square):
         for i in range(square, 0, -9):
             self.attack_bb[i] = 1
             #if not (i+1) % 8: 
@@ -254,7 +308,7 @@ class Board:
         bP_east_attack_map = {}
         bP_west_attack0_map = {}
 
-        for i in range(self.board_size**2):
+        for i in range(BOARD_SQUARES):
             wP_east_attack_map[i] = self._white_pawn_east_attack(i)
             wP_west_attack_map[i] = self._white_pawn_west_attack(i)
             bP_east_attack_map[i] = self._black_pawn_east_attack(i)
@@ -264,22 +318,22 @@ class Board:
 
     @staticmethod
     def _white_pawn_east_attack(self, square):
-        if sqaure in fsq.h:
+        if sqaure in File.H:
             pass
         return np.array(square + 9)
 
     def _white_pawn_west_attack(self, square):
-        if sqaure in fsq.a:
+        if sqaure in File.A:
             pass
         return np.array(square + 7)
 
     def _black_pawn_east_attack(self, square):
-        if sqaure in fsq.h:
+        if sqaure in File.H:
             pass
         return np.array(square - 9)
 
-    def _black_pawn_west_attack(self. square):
-        if sqaure in fsq.a:
+    def _black_pawn_west_attack(self, square):
+        if sqaure in File.A:
             pass
         return np.array(square - 7)
 
@@ -299,38 +353,38 @@ class Board:
     #Knight Movement
     def _make_knight_bb(self):
         knight_attack_map = {}
-        for i in range(self.board_size**2):
+        for i in range(BOARD_SQUARES):
             knight_attack_map[i] = self._knight_attacks(i)
         return knight_attack_map
 
     def _knight_attacks(self,square):
-        row_mask = self._empty_bb()
-        col_mask = self._empty_bb()
-        agg_mask = self._empty_bb()
+        row_mask = make_empty_uint64_bitmap()#[0]
+        col_mask = make_empty_uint64_bitmap()#[0]
+        agg_mask = make_empty_uint64_bitmap()#[0]
 
         #overflow file mask -> block off overflow knight moves
-        if square in fsq.a:
+        if square in File.A:
             col_mask = self.file_g_bb | self.file_h_bb
-        elif square in fsq.b:
+        elif square in File.B:
             col_mask = self.file_h_bb
-        elif square in fsq.g:
+        elif square in File.G:
             col_mask = self.file_a_bb
-        elif square in fsq.h:
+        elif square in File.H:
             col_mask = self.file_a_bb | self.file_b_bb
 
         #overflow ranks mask
-        if square in rsq._1:
+        if square in Rank.x1:
             row_mask = self.rank_8_bb | self.rank_7_bb
-        elif square in rsq._2:
+        elif square in Rank.x2:
             row_mask = self.rank_8_bb
         #aggregate mask
         if row_mask.any() or col_mask.any():
             agg_mask = row_mask | col_mask
 
-        attacks = self._empty_bb()
+        attacks = make_empty_uint64_bitmap() 
 
         for i in [0,6,15,17,10,-6,-15,-17,-10]:
-            if square + i >= self.board_size**2 or square + i < 0:
+            if square + i >= BOARD_SQUARES or square + i < 0:
                 #Skip OOB
                 continue
             attacks[square + i] = 1
@@ -341,78 +395,56 @@ class Board:
 
 
     def _empty_bb(self):
-        return np.zeros(self.board_size**2, "byte")
+        return np.zeros(BOARD_SQUARES, "byte")
 
     def set_rank_file_bb(self):
         #todo: faster numpy methods
-        for val in fsq.a: self.file_a_bb[val] = 1
-        for val in fsq.b: self.file_b_bb[val] = 1
-        for val in fsq.c: self.file_c_bb[val] = 1
-        for val in fsq.d: self.file_d_bb[val] = 1
-        for val in fsq.e: self.file_e_bb[val] = 1
-        for val in fsq.f: self.file_f_bb[val] = 1
-        for val in fsq.g: self.file_g_bb[val] = 1
-        for val in fsq.h: self.file_h_bb[val] = 1
+        for val in File.A: self.file_a_bb |= set_bit(self.file_a_bb, val)
+        for val in File.B: self.file_b_bb |= set_bit(self.file_b_bb, val)
+        for val in File.C: self.file_c_bb |= set_bit(self.file_c_bb, val)
+        for val in File.D: self.file_d_bb |= set_bit(self.file_d_bb, val)
+        for val in File.E: self.file_e_bb |= set_bit(self.file_e_bb, val) 
+        for val in File.F: self.file_f_bb |= set_bit(self.file_f_bb, val) 
+        for val in File.G: self.file_g_bb |= set_bit(self.file_g_bb, val) 
+        for val in File.H: self.file_h_bb |= set_bit(self.file_h_bb, val) 
 
-        for val in rsq._1: self.rank_1_bb[val] = 1
-        for val in rsq._2: self.rank_2_bb[val] = 1
-        for val in rsq._3: self.rank_3_bb[val] = 1
-        for val in rsq._4: self.rank_4_bb[val] = 1
-        for val in rsq._5: self.rank_5_bb[val] = 1
-        for val in rsq._6: self.rank_6_bb[val] = 1
-        for val in rsq._7: self.rank_7_bb[val] = 1
-        for val in rsq._8: self.rank_8_bb[val] = 1
+        for val in Rank.x1: self.rank_1_bb |= set_bit(self.rank_1_bb, val)
+        for val in Rank.x2: self.rank_2_bb |= set_bit(self.rank_2_bb, val)
+        for val in Rank.x3: self.rank_3_bb |= set_bit(self.rank_3_bb, val)
+        for val in Rank.x4: self.rank_4_bb |= set_bit(self.rank_4_bb, val)
+        for val in Rank.x5: self.rank_5_bb |= set_bit(self.rank_5_bb, val)
+        for val in Rank.x6: self.rank_6_bb |= set_bit(self.rank_6_bb, val)
+        for val in Rank.x7: self.rank_7_bb |= set_bit(self.rank_7_bb, val)
+        for val in Rank.x8: self.rank_8_bb |= set_bit(self.rank_8_bb, val)
 
     def _set_white(self):
     
-        self.white_R_bb[0] = 1
-        self.white_N_bb[1] = 1
-        self.white_B_bb[2] = 1
-        self.white_Q_bb[3] = 1
-        self.white_K_bb[4] = 1
-        self.white_B_bb[5] = 1
-        self.white_N_bb[6] = 1
-        self.white_R_bb[7] = 1
+        self.white_R_bb |= set_bit(self.white_R_bb, 0)
+        self.white_N_bb |= set_bit(self.white_N_bb, 1)
+        self.white_B_bb |= set_bit(self.white_B_bb, 2)
+        self.white_Q_bb |= set_bit(self.white_Q_bb, 3)
+        self.white_K_bb |= set_bit(self.white_K_bb, 4)
+        self.white_B_bb |= set_bit(self.white_B_bb, 5)
+        self.white_N_bb |= set_bit(self.white_N_bb, 6)
+        self.white_R_bb |= set_bit(self.white_R_bb, 7)
         
         for i in range (8,16):
-            self.white_P_bb[i] = 1
+            self.white_P_bb |= set_bit(self.white_P_bb, i)
    
     def _set_black(self):
  
-        self.black_R_bb[56] = 1
-        self.black_N_bb[57] = 1
-        self.black_B_bb[58] = 1
-        self.black_Q_bb[59] = 1
-        self.black_K_bb[60] = 1
-        self.black_B_bb[61] = 1
-        self.black_N_bb[62] = 1
-        self.black_R_bb[63] = 1
-
+        self.black_R_bb |= set_bit(self.black_R_bb, 56)
+        self.black_N_bb |= set_bit(self.black_N_bb, 57)
+        self.black_B_bb |= set_bit(self.black_B_bb, 58)
+        self.black_Q_bb |= set_bit(self.black_Q_bb, 59)
+        self.black_K_bb |= set_bit(self.black_K_bb, 60)
+        self.black_B_bb |= set_bit(self.black_B_bb, 61)
+        self.black_N_bb |= set_bit(self.black_N_bb, 62)
+        self.black_R_bb |= set_bit(self.black_R_bb, 63)
+        
         for i in range (48,56):
-            self.black_P_bb[i] = 1
-    def reset_bb(self):
-        self.attack_bb = self._empty_bb()
-
-def pretty_print_bb(bb, board_size=8):
-    """Prettified representation of the board.
-    ..TODO:: Refactor into a dedicated module.
-    """
-    val = ''
-    display_rank = board_size
-    board = np.reshape(np.flip(bb), (board_size, board_size))
-    for i, row in enumerate(board):
-        val += f'{display_rank} '
-        display_rank -= 1
-        for square in np.flip(row):
-            if square:
-                val += ' ▓'
-                continue
-            val += ' ░'
-        val += '\n'
-    val += '  '
-    for char in string.ascii_uppercase[:board_size]:
-        val += f' {char}'
-    print(val)
+            self.black_P_bb |= set_bit(self.black_P_bb, i)
+    
 
 
 

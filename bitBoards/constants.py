@@ -2,10 +2,8 @@ import numpy as np
 
 LIGHT_SQUARES = 0x55AA55AA55AA55AA
 DARK_SQUARES  = 0xAA55AA55AA55AA55
-
-
     
- "Translates squares (algebraic notation) into map positions (integers)"""
+"Translates squares (algebraic notation) into map positions (integers)"""
 
 HOT = np.uint64(1)
 

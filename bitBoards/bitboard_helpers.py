@@ -182,6 +182,16 @@ def generate_king_attack_bb_from_square(square):
         attack_bb |= hot << np.uint64(square + i) & ~np.uint64(File.H)
     return attack_bb
 
+def generate_queen_attack_bb_from_square(square):
+    return generate_diag_attack_bb_from_square(square) \
+           | generate_file_attack_bb_from_square(square) \
+           | generate_rank_attack_bb_from_square(square)
+
+
+def generate_rook_attack_bb_from_square(square):
+    return generate_file_attack_bb_from_square(square) \
+           | generate_rank_attack_bb_from_square(square)
+
 
 def generate_white_pawn_attack_bb_from_square(square):
     attack_bb = make_empty_uint64_bitmap()
@@ -199,57 +209,103 @@ def generate_black_pawn_attack_bb_from_square(square):
     # Southwest (mask the H file)
     attack_bb |= HOT << np.uint64(square - 7) & ~np.uint64(File.H)
     return attack_bb
+
+
+def generate_white_pawn_motion_bb_from_square(square):
+    motion_bb = make_empty_uint64_bitmap()
+    motion_bb |= HOT << np.uint64(square + 8)
+    if square in Rank.x2:
+        motion_bb |= HOT << np.uint64(square + 16)
+    return motion_bb
+
+
+def generate_black_pawn_motion_bb_from_square(square):
+    motion_bb = make_empty_uint64_bitmap()
+    motion_bb |= HOT << np.uint64(square - 8)
+    if square in Rank.x2:
+        motion_bb |= HOT << np.uint64(square - 16)
+    return motion_bb
+
+
  -------------------------------------------------------------
 #  ATTACK PATTERN MAPS
 # -------------------------------------------------------------
 
-def _make_knight_attack_bbs():
+def make_knight_attack_bbs():
     knight_attack_map = {}
     for i in range(BOARD_SQUARES):
         knight_attack_map[i] = generate_knight_attack_bb_from_square(i)
     return knight_attack_map
 
 
-def _make_rank_attack_bbs():
+def make_rank_attack_bbs():
     rank_attack_map = {}
     for i in range(BOARD_SQUARES):
         rank_attack_map[i] = generate_rank_attack_bb_from_square(i)
     return rank_attack_map
 
 
-def _make_file_attack_bbs():
+def make_file_attack_bbs():
     file_attack_map = {}
     for i in range(BOARD_SQUARES):
         file_attack_map[i] = generate_file_attack_bb_from_square(i)
     return file_attack_map
 
 
-def _make_diag_attack_bbs():
+def make_diag_attack_bbs():
     diag_attack_map = {}
     for i in range(BOARD_SQUARES):
         diag_attack_map[i] = generate_diag_attack_bb_from_square(i)
     return diag_attack_map
 
 
-def _make_king_attack_bbs():
+def make_king_attack_bbs():
     king_attack_map = {}
     for i in range(BOARD_SQUARES):
         king_attack_map[i] = generate_king_attack_bb_from_square(i)
     return king_attack_map
 
+def make_queen_attack_bbs():
 
-def _make_white_pawn_attack_bbs():
+    queen_attack_map = {}
+    for i in range(BOARD_SQUARES):
+        queen_attack_map[i] = generate_queen_attack_bb_from_square(i)
+    return queen_attack_map
+
+
+def make_rook_attack_bbs():
+    rook_attack_map = {}
+    for i in range(BOARD_SQUARES):
+        rook_attack_map[i] = generate_rook_attack_bb_from_square(i)
+    return rook_attack_map
+
+
+def make_white_pawn_attack_bbs():
     white_pawn_attack_map = {}
     for i in range(Square.A2, Square.A8):
         white_pawn_attack_map[i] = generate_white_pawn_attack_bb_from_square(i)
     return white_pawn_attack_map
 
 
-def _make_black_pawn_attack_bbs():
+def make_black_pawn_attack_bbs():
     black_pawn_attack_map = {}
     for i in range(Square.A2, Square.A8):
         black_pawn_attack_map[i] = generate_black_pawn_attack_bb_from_square(i)
     return black_pawn_attack_map
+
+
+def make_white_pawn_motion_bbs():
+    white_pawn_motion_map = {}
+    for i in range(Square.A2, Square.A8):
+        white_pawn_motion_map[i] = generate_white_pawn_motion_bb_from_square(i)
+    return white_pawn_motion_map
+
+
+def make_black_pawn_motion_bbs():
+    black_pawn_motion_map = {}
+    for i in range(Square.A2, Square.A8):
+        black_pawn_motion_map[i] = generate_black_pawn_motion_bb_from_square(i)
+    return black_pawn_motion_map
 
 
 # -------------------------------------------------------------

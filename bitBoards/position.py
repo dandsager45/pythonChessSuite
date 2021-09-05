@@ -58,7 +58,7 @@ class Position:
 
         self.halfmove_clock += 1
 
-        self.board.update_position(self.piece_map)
+        self.board.update_bitboards(self.piece_map)
         self.to_move = not self.to_move
         return generate_fen()
     

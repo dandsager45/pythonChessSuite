@@ -3,8 +3,9 @@
 
 import numpy as np
 
-from bitboard_helpers import make_empty_uint64_bitmap, set_bit, _make_knight_attack_bbs, _make_king_attack_bbs, \
-    _make_white_pawn_attack_bbs, _make_black_pawn_attack_bbs, file_h_bb, file_a_bb
+from bitboard_helpers import make_empty_uint64_bitmap, set_bit, make_knight_attack_bbs, make_king_attack_bbs, \
+    make_white_pawn_attack_bbs, make_black_pawn_attack_bbs, file_h_bb, file_a_bb, make_diag_attack_bbs, \
+    make_rook_attack_bbs, make_white_pawn_motion_bbs, make_black_pawn_motion_bbs
 from constants import Piece
 
 BOARD_SIZE = 8
@@ -19,48 +20,6 @@ one bitboard consists of 64 bits. Each bit represents a square on the chessboard
 There is a different bitboard for each color of each piece, 1 represents that the 
 piece is present, 0 is vacant
 """
-
-def _make_knight_attack_bbs():
-    knight_attack_map = {}
-    for i in range(BOARD_SQUARES):
-       knight_attack_map[i] = generate_knight_attack_bb_from_square(i)
-    return knight_attack_map
-
-
-def _make_rank_attack_bbs():
-    rank_attack_map = {}
-    for i in range(BOARD_SQUARES):
-        rank_attack_map[i] = generate_rank_attack_bb_from_square(i)
-    return rank_attack_map
-
-
-def _make_file_attack_bbs():
-    file_attack_map = {}
-    for i in range(BOARD_SQUARES):
-        file_attack_map[i] = generate_file_attack_bb_from_square(i)
-    return file_attack_map
-
-
-def _make_diag_attack_bbs():
-    diag_attack_map = {}
-    for i in range(BOARD_SQUARES):
-        diag_attack_map[i] = generate_diag_attack_bb_from_square(i)
-    return diag_attack_map
-
-
-def _make_king_attack_bbs():
-    king_attack_map = {}
-    for i in range(BOARD_SQUARES):
-        king_attack_map[i] = generate_king_attack_bb_from_square(i)
-    return king_attack_map
-
-
-def _make_pawn_attack_bbs():
-    pawn_attack_map = {}
-    for i in range(BOARD_SQUARES):
-        pawn_attack_map[i] = generate_pawn_attack_bb_from_square(i)
-    return pawn_attack_map
-
 
 class Board:
 
@@ -88,10 +47,14 @@ class Board:
         self.init_pieces()
 
         #static bitboards
-        self.knight_bbs = _make_knight_attack_bbs()
-        self.king_attack_bbs = _make_king_attack_bbs()
-        self.white_pawn_attack_bbs = _make_white_pawn_attack_bbs()
-        self.black_pawn_attack_bbs = _make_black_pawn_attack_bbs()
+        self.knight_bbs = make_knight_attack_bbs()
+        self.bishop_bbs = make_diag_attack_bbs()
+        self.rook_attack_bbs = make_rook_attack_bbs()
+        self.king_attack_bbs = make_king_attack_bbs()
+        self.white_pawn_attack_bbs = make_white_pawn_attack_bbs()
+        self.black_pawn_attack_bbs = make_black_pawn_attack_bbs()
+        self.white_pawn_motion_bbs = make_white_pawn_motion_bbs()
+        self.black_pawn_motion_bbs = make_black_pawn_motion_bbs()
 
     # -----------------------------------------------------
     #  BITBOARD ACCESS: PIECE LOCATIONS
@@ -188,7 +151,7 @@ class Board:
     #  BOARD UPDATES
     # -----------------------------------------------------
 
-    def update_position(self, piece_map):
+    def update_bitboards(self, piece_map):
         for key, val in piece_map.items():
 
             # White Pieces
@@ -258,13 +221,29 @@ class Board:
     # -------------------------------------------------------------
 
     def get_bishop_attack_from(self, square):
-        pass
-
+        return
     def get_rook_attack_from(self, square):
+        pass
+    def get_queen_attack_from(self, square):
         pass
 
     # -------------------------------------------------------------
     #  PAWN MOVEMENTS
     # -------------------------------------------------------------
 
+    def get_pawn_attack_from(self, square):
+        pass
 
+    # -------------------------------------------------------------
+    #  KNIGHT MOVEMENTS
+    # -------------------------------------------------------------
+
+    def get_knight_attack_from(self, square):
+        pass
+
+    # -------------------------------------------------------------
+    #  KING MOVEMENTS
+    # -------------------------------------------------------------
+
+    def get_king_attack_from(self, square):
+        pass

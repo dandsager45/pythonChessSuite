@@ -46,6 +46,7 @@ class Board:
         self.knight_attack_bbs = make_knight_attack_bbs()
         self.bishop_attack_bbs = make_diag_attack_bbs()
         self.rook_attack_bbs = make_rook_attack_bbs()
+        self.queen_attack_bbs = make_queen_attack_bbs()
         self.king_attack_bbs = make_king_attack_bbs()
         self.white_pawn_attack_bbs = make_white_pawn_attack_bbs()
         self.black_pawn_attack_bbs = make_black_pawn_attack_bbs()

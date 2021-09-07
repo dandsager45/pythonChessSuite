@@ -1,5 +1,5 @@
 from bitboard_helpers import set_bit
-from board import Board
+from bitboardInfrastructure import Board
 from constants import Color, Piece, Rank
 from move import Move
 import numpy as np

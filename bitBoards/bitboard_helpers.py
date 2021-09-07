@@ -1,118 +1,16 @@
-import string
 
-import numpy as np
-
-from constants import File, HOT, Square, Rank, DARK_SQUARES, LIGHT_SQUARES
-
-BOARD_SIZE = 8
-BOARD_SQUARES = BOARD_SIZE ** 2
-
-
-def make_empty_uint64_bitmap():
-    return np.uint64(0)
-
-
-def get_bitboard_as_bytes(bitboard):
-    return bitboard.tobytes()
-
-
-def get_binary_string(bitboard, board_squares=64):
-    return format(bitboard, 'b').zfill(board_squares)
-
-
-# -------------------------------------------------------------
-# BIT QUERYING
-# -------------------------------------------------------------
-
-def bitscan_forward(bitboard):
-    """ Scans from A1 until we hit a HOT bit """
-    i = 1
-    while not (bitboard >> np.uint64(i)) % 2:
-        i += 1
-    return i
-
-
-def bitscan_reverse(bitboard):
-    # bitScanReverse
-    # @author Eugene Nalimov
-    # @param bb bitboard to scan
-    # @return index (0..63) of most significant one bit
-    #
-    def lookup_most_significant_1_bit(bit: np.uint64) -> np.uint64:
-        if bit > np.uint64(127): return np.uint64(7)
-        if bit > np.uint64(63):  return np.uint64(6)
-        if bit > np.uint64(31):  return np.uint64(5)
-        if bit > np.uint64(15):  return np.uint64(4)
-        if bit > np.uint64(7):   return np.uint64(3)
-        if bit > np.uint64(1):   return np.uint64(1)
-        return np.uint64(0)
-
-    if not bitboard:
-        raise Exception("You don't want to reverse scan en empty bitboard, right?")
-
-    result = np.uint64(0)
-
-    if bitboard > 0xFFFFFFFF:
-        bitboard >>= 32
-        result = 32
-
-    if bitboard > 0xFFFF:
-        bitboard >>= 16
-        result += 16
-
-    if bitboard > 0xFF:
-        bitboard >>= 8
-        result += 8
-
-    return result + lookup_most_significant_1_bit(bitboard)
-
-
-# -------------------------------------------------------------
-# BIT MANIPULATION
-# -------------------------------------------------------------
-
-def set_bit(bitboard, bit):
-    return bitboard | np.uint64(1) << np.uint64(bit)
-
-
-def clear_bit(bitboard, bit):
-    return bitboard & ~(np.uint64(1) << bit)
-
-
-# -------------------------------------------------------------
-# DEBUG PRETTY PRINT
-# -------------------------------------------------------------
-
-def pprint_bb(bitboard, board_size=8):
-    bitboard = get_binary_string(bitboard)
-    val = ''
-    display_rank = board_size
-    board = [bitboard[i:i + 8] for i in range(0, len(bitboard), board_size)]
-    for i, row in enumerate(board):
-        val += f'{display_rank} '
-        display_rank -= 1
-        for square in reversed(row):
-            if int(square):
-                val += ' ▓'
-                continue
-            val += ' ░'
-        val += '\n'
-    val += '  '
-    for char in string.ascii_uppercase[:board_size]:
-        val += f' {char}'
-    print(val)
-
-
-# -------------------------------------------------------------
-#  ATTACK PATTERNS
-# -------------------------------------------------------------
-
-def generate_knight_attack_bb_from_square(square):
-    attack_bb = make_empty_uint64_bitmap()
-    for i in [0, 6, 15, 17, 10, -6, -15, -17, -10]:
         attack_bb |= set_bit(attack_bb, square + i)
+        # Mask of wrapping
+        if square in (File.B | File.A):
+            attack_bb &= ~(np.uint64(File.hexG | File.hexH))
+        if square in (File.G | File.H):
+            attack_bb &= ~(np.uint64(File.hexA | File.hexB))
     return attack_bb
 
+
+# -------------------------------------------------------------
+#  ATTACK PATTERNS: ROOK
+# -------------------------------------------------------------
 
 def generate_rank_attack_bb_from_square(square):
     attack_bb = make_empty_uint64_bitmap()
@@ -122,12 +20,13 @@ def generate_rank_attack_bb_from_square(square):
     # South
     for i in range(0, -64, -8):
         attack_bb |= set_bit(attack_bb, square + i)
+    attack_bb = clear_bit(attack_bb, square)
     return attack_bb
 
 
 def generate_file_attack_bb_from_square(square):
     attack_bb = make_empty_uint64_bitmap()
-    original_square = square    
+    original_square = square
 
     # East
     if not square % 8:
@@ -147,66 +46,95 @@ def generate_file_attack_bb_from_square(square):
             attack_bb |= HOT << np.uint64(square)
             square -= 1
         attack_bb |= HOT << np.uint64(square)
+
+    attack_bb = clear_bit(attack_bb, original_square)
     return attack_bb
 
+
+def generate_rook_attack_bb_from_square(square):
+    return generate_file_attack_bb_from_square(square) \
+           | generate_rank_attack_bb_from_square(square)
+
+
+# -------------------------------------------------------------
+#  ATTACK PATTERNS: BISHOP
+# -------------------------------------------------------------
 
 def generate_diag_attack_bb_from_square(square):
     attack_bb = make_empty_uint64_bitmap()
     original_square = square
 
-    # NorthEast
-    if square % 8 == 0:
+    attack_bb = get_northeast_ray(attack_bb, square)
+    attack_bb = get_southwest_ray(attack_bb, square)
+    attack_bb = get_northwest_ray(attack_bb, square)
+    attack_bb = get_southeast_ray(attack_bb, square)
+
+    attack_bb = clear_bit(attack_bb, original_square)
+
+    return attack_bb
+
+
+def get_southeast_ray(attack_bb, square):
+    if square % 8 == 0 and square not in File.H:
         attack_bb |= HOT << np.uint64(square)
-        square += 9
-
-    while not square % 8 == 0:
+        square -= 7
+    while not square % 8 == 0 and square not in File.H:
         attack_bb |= HOT << np.uint64(square)
-        square += 9
+        square -= 7
+    attack_bb |= HOT << np.uint64(square)
+    return attack_bb
 
-    square = original_square
 
-    # SouthWest
+def get_northwest_ray(attack_bb, square):
+    if square % 8 == 0 and square not in File.A:
+        attack_bb |= HOT << np.uint64(square)
+        square += 7
+    while not square % 8 == 0 and square not in File.A:
+        attack_bb |= HOT << np.uint64(square)
+        square += 7
+    attack_bb |= HOT << np.uint64(square)
+    return attack_bb
+
+
+def get_southwest_ray(attack_bb, square):
     if square % 8 == 0:
         attack_bb |= HOT << np.uint64(square)
         square -= 9
-
     else:
         while not square % 8 == 0:
             attack_bb |= HOT << np.uint64(square)
             square -= 9
         attack_bb |= HOT << np.uint64(square)
-
-    square = original_square
-
-    # NorthWest
-    if square % 8 == 0 and square not in File.A:
-        attack_bb |= HOT << np.uint64(square)
-        square += 7
-
-    while not square % 8 == 0 and square not in File.A:
-        attack_bb |= HOT << np.uint64(square)
-        square += 7
-
-    attack_bb |= HOT << np.uint64(square)
-
-    square = original_square
-
-    # SouthEast
-    if square % 8 == 0 and square not in File.H:
-        attack_bb |= HOT << np.uint64(square)
-        square -= 7
-
-    while not square % 8 == 0 and square not in File.H:
-        attack_bb |= HOT << np.uint64(square)
-        square -= 7
-    attack_bb |= HOT << np.uint64(square)
-
     return attack_bb
 
 
+def get_northeast_ray(attack_bb, square):
+    if square % 8 == 0:
+        attack_bb |= HOT << np.uint64(square)
+        square += 9
+    while not square % 8 == 0:
+        attack_bb |= HOT << np.uint64(square)
+        square += 9
+    return attack_bb
+
+
+# -------------------------------------------------------------
+#  ATTACK PATTERNS: QUEEN
+# -------------------------------------------------------------
+
+def generate_queen_attack_bb_from_square(square):
+    return generate_diag_attack_bb_from_square(square) \
+           | generate_file_attack_bb_from_square(square) \
+           | generate_rank_attack_bb_from_square(square)
+
+
+# -------------------------------------------------------------
+#  ATTACK PATTERNS: KING
+# -------------------------------------------------------------
+
 def generate_king_attack_bb_from_square(square):
     attack_bb = make_empty_uint64_bitmap()
-    for i in [0, 8, -8]:
+    for i in [8, -8]:
         # North-South
         attack_bb |= HOT << np.uint64(square + i)
     for i in [1, 9, -7]:
@@ -218,16 +146,9 @@ def generate_king_attack_bb_from_square(square):
     return attack_bb
 
 
-def generate_queen_attack_bb_from_square(square):
-    return generate_diag_attack_bb_from_square(square) \
-           | generate_file_attack_bb_from_square(square) \
-           | generate_rank_attack_bb_from_square(square)
-
-
-def generate_rook_attack_bb_from_square(square):
-    return generate_file_attack_bb_from_square(square) \
-           | generate_rank_attack_bb_from_square(square)
-
+# -------------------------------------------------------------
+#  ATTACK PATTERNS: PAWN
+# -------------------------------------------------------------
 
 def generate_white_pawn_attack_bb_from_square(square):
     attack_bb = make_empty_uint64_bitmap()
@@ -258,7 +179,7 @@ def generate_white_pawn_motion_bb_from_square(square):
 def generate_black_pawn_motion_bb_from_square(square):
     motion_bb = make_empty_uint64_bitmap()
     motion_bb |= HOT << np.uint64(square - 8)
-    if square in Rank.x2:
+    if square in Rank.x7:
         motion_bb |= HOT << np.uint64(square - 16)
     return motion_bb
 
@@ -348,93 +269,70 @@ def make_black_pawn_motion_bbs():
 #  BITBOARD ACCESS: BOARD REGIONS
 # -------------------------------------------------------------
 
-def rank_8_bb():
-    return np.uint64(Rank.hex8)
+def rank_8_bb(): return np.uint64(Rank.hex8)
 
 
-def rank_7_bb():
-    return np.uint64(Rank.hex7)
+def rank_7_bb(): return np.uint64(Rank.hex7)
 
 
-def rank_6_bb():
-    return np.uint64(Rank.hex6)
+def rank_6_bb(): return np.uint64(Rank.hex6)
 
 
-def rank_5_bb():
-    return np.uint64(Rank.hex5)
+def rank_5_bb(): return np.uint64(Rank.hex5)
 
 
-def rank_4_bb():
-    return np.uint64(Rank.hex4)
+def rank_4_bb(): return np.uint64(Rank.hex4)
 
 
-def rank_3_bb():
-    return np.uint64(Rank.hex3)
+def rank_3_bb(): return np.uint64(Rank.hex3)
 
 
-def rank_2_bb():
-    return np.uint64(Rank.hex2)
+def rank_2_bb(): return np.uint64(Rank.hex2)
 
 
-def rank_1_bb():
-    return np.uint64(Rank.hex1)
+def rank_1_bb(): return np.uint64(Rank.hex1)
 
 
-def file_h_bb():
-    return np.uint64(File.hexH)
+def file_h_bb(): return np.uint64(File.hexH)
 
 
-def file_g_bb():
-    return np.uint64(File.hexG)
+def file_g_bb(): return np.uint64(File.hexG)
 
 
-def file_f_bb():
-    return np.uint64(File.hexF)
+def file_f_bb(): return np.uint64(File.hexF)
 
 
-def file_e_bb():
-    return np.uint64(File.hexE)
+def file_e_bb(): return np.uint64(File.hexE)
 
 
-def file_d_bb():
-    return np.uint64(File.hexD)
+def file_d_bb(): return np.uint64(File.hexD)
 
 
-def file_c_bb():
-    return np.uint64(File.hexC)
+def file_c_bb(): return np.uint64(File.hexC)
 
 
-def file_b_bb():
-    return np.uint64(File.hexB)
+def file_b_bb(): return np.uint64(File.hexB)
 
 
-def file_a_bb():
-    return np.uint64(File.hexA)
+def file_a_bb(): return np.uint64(File.hexA)
 
 
-def dark_squares_bb():
-    return np.uint64(DARK_SQUARES)
+def dark_squares_bb(): return np.uint64(DARK_SQUARES)
 
 
-def light_squares_bb():
-    return np.uint64(LIGHT_SQUARES)
+def light_squares_bb(): return np.uint64(LIGHT_SQUARES)
 
 
-def center_squares_bb():
-    return (file_e_bb | file_d_bb) & (rank_4_bb | rank_5_bb)
+def center_squares_bb(): return (file_e_bb | file_d_bb) & (rank_4_bb | rank_5_bb)
 
 
-def flanks_bb():
-    return file_a_bb | file_h_bb
+def flanks_bb(): return file_a_bb | file_h_bb
 
 
-def center_files_bb():
-    return file_c_bb | file_d_bb | file_e_bb | file_f_bb
+def center_files_bb(): return file_c_bb | file_d_bb | file_e_bb | file_f_bb
 
 
-def kingside_bb():
-    return file_e_bb | file_f_bb | file_g_bb | file_h_bb
+def kingside_bb(): return file_e_bb | file_f_bb | file_g_bb | file_h_bb
 
 
-def queenside_bb():
-    return file_a_bb | file_b_bb | file_c_bb | file_d_bb
+def queenside_bb(): return file_a_bb | file_b_bb | file_c_bb | file_d_bb
